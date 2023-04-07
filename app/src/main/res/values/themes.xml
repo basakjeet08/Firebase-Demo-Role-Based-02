@@ -2,5 +2,6 @@
 <resources>
 
     <style name="Theme.FirebaseDemoRoleBased02" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/black</item>
     </style>
 </resources>

@@ -1,5 +1,6 @@
 package com.anirban.firebasedemorolebased02.feature_authentication.presentation.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,11 +9,27 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.anirban.firebasedemorolebased02.R
+import com.anirban.firebasedemorolebased02.core.theme.CustomAppTheme
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.components.TextButtonUI
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.navigation.AuthenticationRoutes
+
+// This is the Preview function of the Login Screen
+@Preview("Light")
+@Preview(
+    name = "Dark",
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun DefaultPreview() {
+    CustomAppTheme {
+        ForgotPasswordScreen(navController = rememberNavController())
+    }
+}
 
 @Composable
 fun ForgotPasswordScreen(
