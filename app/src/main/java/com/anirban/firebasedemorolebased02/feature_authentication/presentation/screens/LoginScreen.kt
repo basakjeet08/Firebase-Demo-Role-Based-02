@@ -1,11 +1,13 @@
 package com.anirban.firebasedemorolebased02.feature_authentication.presentation.screens
 
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -13,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +33,7 @@ import com.anirban.firebasedemorolebased02.feature_authentication.presentation.c
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.components.UserInputUI
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.navigation.AuthenticationRoutes
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.stateholder.LoginViewModel
+import com.anirban.firebasedemorolebased02.feature_authentication.presentation.util.LoginState
 
 
 // This is the Preview function of the Login Screen
@@ -55,104 +59,145 @@ fun LoginScreen(
     val focusManager = LocalFocusManager.current
     // ViewModel variable
     val myViewModel: LoginViewModel = viewModel()
+    // Context of the Activity
+    val context = LocalContext.current
+    // Boolean which stores if there is already a Login Request being processed at the time
+    var loginRequestEmpty = true
 
+    // Checking what to do according to the different States of UI
+    when (myViewModel.loginState) {
+        is LoginState.Success -> {
+
+            // Resetting all the Values
+            myViewModel.resetToDefault()
+            Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
+        }
+        is LoginState.Loading -> {
+            loginRequestEmpty = false
+        }
+        is LoginState.Failure -> {
+            Toast.makeText(
+                context,
+                (myViewModel.loginState as LoginState.Failure).errorMessage,
+                Toast.LENGTH_SHORT
+            ).show()
+
+            myViewModel.resetLoginState()
+        }
+        else -> {}
+    }
 
     Surface(
         modifier = modifier
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Box {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-            // User Input Email Field
-            UserInputUI(
-                userInput = myViewModel.userInputEmail,
-                inputFieldLabel = R.string.email,
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        focusManager.moveFocus(FocusDirection.Down)
-                    }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
-                trailingIcon = {
-                    if (myViewModel.userInputEmail != "") {
-                        IconButton(onClick = { myViewModel.clearUserInputEmail() }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = null)
+                // User Input Email Field
+                UserInputUI(
+                    userInput = myViewModel.userInputEmail,
+                    inputFieldLabel = R.string.email,
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        }
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    trailingIcon = {
+                        if (myViewModel.userInputEmail != "") {
+                            IconButton(onClick = { myViewModel.clearUserInputEmail() }) {
+                                Icon(imageVector = Icons.Default.Clear, contentDescription = null)
+                            }
                         }
                     }
+                ) {
+                    myViewModel.changeUserInputEmail(it)
                 }
-            ) {
-                myViewModel.changeUserInputEmail(it)
-            }
 
-            // Spacing of 16dp
-            Spacer(modifier = Modifier.height(16.dp))
+                // Spacing of 16dp
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // User Input Password Field
-            UserInputUI(
-                userInput = myViewModel.userInputPassword,
-                inputFieldLabel = R.string.password,
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
+                // User Input Password Field
+                UserInputUI(
+                    userInput = myViewModel.userInputPassword,
+                    inputFieldLabel = R.string.password,
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    visualTransformation = myViewModel.passwordShowState(),
+
+                    // It is the Eye Icon (show Password) to be Showed as a Trailing Icon
+                    trailingIcon = {
+                        IconButton(onClick = { myViewModel.changePasswordHideStatus() }) {
+                            val visibilityIcon =
+                                if (myViewModel.showPassword) Visibility.VisibilityOn else Visibility.VisibilityOff
+                            val description =
+                                if (myViewModel.showPassword) "Show password" else "Hide password"
+                            Icon(imageVector = visibilityIcon, contentDescription = description)
+                        }
                     }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                visualTransformation = myViewModel.passwordShowState(),
+                ) {
+                    myViewModel.changeUserInputPassword(it)
+                }
 
-                // It is the Eye Icon (show Password) to be Showed as a Trailing Icon
-                trailingIcon = {
-                    IconButton(onClick = { myViewModel.changePasswordHideStatus() }) {
-                        val visibilityIcon =
-                            if (myViewModel.showPassword) Visibility.VisibilityOn else Visibility.VisibilityOff
-                        val description =
-                            if (myViewModel.showPassword) "Show password" else "Hide password"
-                        Icon(imageVector = visibilityIcon, contentDescription = description)
+                // Spacing of 16dp
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Login Button
+                GradientButton(buttonShape = buttonShape, buttonText = R.string.login) {
+                    if (loginRequestEmpty)
+                        myViewModel.sendFirebaseLoginRequest()
+                    else
+                        Toast.makeText(context, "Wait", Toast.LENGTH_SHORT).show()
+                }
+
+                // Spacing of 16dp
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Forgot Password Text Button
+                TextButtonUI(textToShow = R.string.forgot_password) {
+
+                    // This Executes when we press the TextButton
+                    navController.navigate(AuthenticationRoutes.ForgotPasswordRoute.route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
                     }
                 }
-            ) {
-                myViewModel.changeUserInputPassword(it)
-            }
 
-            // Spacing of 16dp
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Login Button
-            GradientButton(buttonShape = buttonShape, buttonText = R.string.login) {
-                myViewModel.sendFirebaseLoginRequest()
-            }
-
-            // Spacing of 16dp
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Forgot Password Text Button
-            TextButtonUI(textToShow = R.string.forgot_password) {
-
-                // This Executes when we press the TextButton
-                navController.navigate(AuthenticationRoutes.ForgotPasswordRoute.route) {
-                    popUpTo(navController.graph.startDestinationId)
-                    launchSingleTop = true
+                // Create an Account Text Button
+                TextButtonUI(textToShow = R.string.create_an_account) {
+                    // This Executes when we press the TextButton
+                    navController.navigate(AuthenticationRoutes.RegisterRoute.route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
                 }
             }
 
-            // Create an Account Text Button
-            TextButtonUI(textToShow = R.string.create_an_account) {
-                // This Executes when we press the TextButton
-                navController.navigate(AuthenticationRoutes.RegisterRoute.route) {
-                    popUpTo(navController.graph.startDestinationId)
-                    launchSingleTop = true
+            // Progress Indicator
+            if (!loginRequestEmpty) {
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    CircularProgressIndicator()
                 }
             }
+
         }
     }
 }

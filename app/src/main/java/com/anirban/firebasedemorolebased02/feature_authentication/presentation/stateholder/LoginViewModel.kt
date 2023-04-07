@@ -7,6 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.ViewModel
+import com.anirban.firebasedemorolebased02.feature_authentication.presentation.util.LoginState
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 
 class LoginViewModel : ViewModel() {
 
@@ -18,6 +22,11 @@ class LoginViewModel : ViewModel() {
 
     var showPassword: Boolean by mutableStateOf(false)
         private set
+
+    var loginState: LoginState by mutableStateOf(LoginState.Initialized)
+
+    // Firebase Authentication Variable
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
     fun changeUserInputEmail(newEmail: String) {
         userInputEmail = newEmail
@@ -42,6 +51,10 @@ class LoginViewModel : ViewModel() {
         showPassword = !showPassword
     }
 
+    fun resetLoginState() {
+        loginState = LoginState.Initialized
+    }
+
     fun resetToDefault() {
         userInputEmail = ""
         userInputPassword = ""
@@ -50,7 +63,36 @@ class LoginViewModel : ViewModel() {
 
     fun sendFirebaseLoginRequest() {
 
-        d("Login View Model", "Email : $userInputEmail \t Password : $userInputPassword")
+        // Updating the login State to the Loading State
+        loginState = LoginState.Loading
+
+        // Checking if all the TextFields are filled or not
+        if (userInputEmail.isEmpty() || userInputPassword.isEmpty()) {
+            loginState = LoginState.Failure(errorMessage = "Enter All the Data")
+            return
+        }
+
+
+        firebaseAuth.signInWithEmailAndPassword(userInputEmail, userInputPassword)
+            .addOnSuccessListener {
+                loginState = LoginState.Success
+            }
+            .addOnFailureListener {
+
+                d("Failure", it.message.toString())
+
+                loginState = when (it) {
+                    is FirebaseAuthInvalidCredentialsException -> LoginState.Failure(
+                        "Invalid Credentials"
+                    )
+                    is FirebaseAuthInvalidUserException -> LoginState.Failure(
+                        "User Not Present"
+                    )
+                    else -> LoginState.Failure(
+                        "Network Not Available"
+                    )
+                }
+            }
     }
 
 }
