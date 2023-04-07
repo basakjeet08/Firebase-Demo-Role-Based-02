@@ -7,10 +7,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.ViewModel
+import com.anirban.firebasedemorolebased02.core.utils.AuthenticatedUserData
 import com.anirban.firebasedemorolebased02.feature_authentication.presentation.util.LoginState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class LoginViewModel : ViewModel() {
 
@@ -75,7 +78,26 @@ class LoginViewModel : ViewModel() {
 
         firebaseAuth.signInWithEmailAndPassword(userInputEmail, userInputPassword)
             .addOnSuccessListener {
-                loginState = LoginState.Success
+
+                val fireStore = Firebase.firestore
+
+                val roll = it.user?.email?.replace("@kiit.ac.in", "").toString()
+
+                fireStore.collection("Users").document(roll).get()
+                    .addOnSuccessListener {
+                        val isAdmin = it.get("role")
+                        d("Success Login", isAdmin.toString())
+
+                        AuthenticatedUserData.setUserEmail(userInputEmail)
+                        AuthenticatedUserData.setUserRole(isAdmin.toString())
+                        AuthenticatedUserData.setUserRoll(roll)
+
+                        loginState = LoginState.Success
+
+                    }
+                    .addOnFailureListener {
+                        d("Failed Login", " failed")
+                    }
             }
             .addOnFailureListener {
 

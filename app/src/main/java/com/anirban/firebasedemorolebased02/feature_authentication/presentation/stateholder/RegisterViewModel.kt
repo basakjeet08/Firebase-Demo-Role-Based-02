@@ -1,5 +1,6 @@
 package com.anirban.firebasedemorolebased02.feature_authentication.presentation.stateholder
 
+import android.util.Log.d
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +11,8 @@ import com.anirban.firebasedemorolebased02.feature_authentication.presentation.u
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class RegisterViewModel : ViewModel() {
 
@@ -94,8 +97,12 @@ class RegisterViewModel : ViewModel() {
 
     fun postSignInRequestFirebase() {
 
-
         registrationState = RegistrationState.Loading
+
+        if (!userInputEmail.contains("@kiit.ac.in")) {
+            registrationState = RegistrationState.Failure("Have to use a KIIT Email ID")
+            return
+        }
 
         if (userInputEmail.isEmpty() || userInputPassword.isEmpty() || userInputRePassword.isEmpty()) {
             registrationState = RegistrationState.Failure(errorMessage = "Enter All the Data")
@@ -110,7 +117,30 @@ class RegisterViewModel : ViewModel() {
 
         firebaseAuth.createUserWithEmailAndPassword(userInputEmail, userInputPassword)
             .addOnSuccessListener {
+
+
+                val roll = it.user?.email?.replace("@kiit.ac.in", "").toString()
+
+                d("Roll ", roll)
+
+                val fireStoreDB = Firebase.firestore
+
+                val user = hashMapOf<String, Any>(
+                    "Roll Number" to roll.toInt(),
+                    "role" to "user"
+                )
+
+                fireStoreDB.collection("Users").document(roll)
+                    .set(user)
+                    .addOnSuccessListener {
+                        d("Adding User Data", "Success")
+                    }
+                    .addOnFailureListener {
+                        d("Adding User Data", "Failed")
+                    }
+
                 registrationState = RegistrationState.Success
+                d("Registration State", "State")
             }
             .addOnFailureListener {
                 registrationState = when (it) {
